@@ -60,6 +60,7 @@
  **********************************************************************/
 #include <p33FJ256GP710A.h>
 #include "CONU2.h"
+#include "MyQueue.h"
 
 _FOSCSEL(FNOSC_FRC); // Internal FRC oscillator
 _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_NONE);
@@ -74,7 +75,9 @@ _FOSC(FCKSM_CSECMD & OSCIOFNC_OFF & POSCMD_NONE);
 unsigned char S3Flag, S4Flag, S5Flag, S6Flag;
 
 void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void) {
-    LATA = U2RXREG;
+    char test = U2RXREG;
+    LATA = test;
+    push(test);
     IFS1bits.U2RXIF = 0;
 }
 
@@ -215,13 +218,15 @@ int main(void) {
 
     InitPorts(); // LEDs outputs, Switches Inputs
 
+    InitQueue();
+
     char ReceivedChar;
     while (1) { // The ever versatile Infinite Loop!
         if (PORTDbits.RD6 == FALSE) {
             //            SoftwareDebounce();
             //            SoftwareDebounce();
             //            SoftwareDebounce();
-            putsU2("Test Message.");
+            putsU2("T");
         }
 
         /* check for receive errors */
@@ -234,10 +239,17 @@ int main(void) {
             continue;
         }
         /* get the data */
-        if (U2STAbits.URXDA == 1) {
-            ReceivedChar = U2RXREG;
+        
+        ReceivedChar = pop();
+        if(ReceivedChar != 0){
             putU2((int)ReceivedChar);
+
         }
+
+//        if (U2STAbits.URXDA == 1) {
+//            ReceivedChar = pop();//U2RXREG;
+//            putU2((int)ReceivedChar);
+//        }
     }
 }
 
